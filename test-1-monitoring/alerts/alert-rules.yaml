@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sre-assessment-alerts
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: pod-alerts
+      rules:
+        - alert: PodCrashLoopBackOff
+          expr: |
+            count by (namespace, pod) (
+              kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}
+            ) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod {{ $labels.pod }} is in CrashLoopBackOff"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in CrashLoopBackOff for more than 5 minutes."
+
+        - alert: PodNotReady
+          expr: |
+            count by (namespace, pod) (
+              kube_pod_status_ready{condition="false"} == 1
+            ) > 0
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} has been not ready for 10 minutes"
+            description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has been in a non-ready state for more than 10 minutes. This may indicate a persistent startup failure or misconfiguration."
+
+    - name: node-alerts
+      rules:
+        - alert: NodeCPUHighUsage
+          expr: |
+            (1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) * 100 > 80
+          for: 3m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} CPU usage above 80%"
+            description: "Node {{ $labels.instance }} CPU usage has been above 80% for more than 3 minutes. Current value: {{ $value | printf \"%.1f\" }}%."
+
+        - alert: NodeMemoryHighUsage
+          expr: |
+            (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} memory usage above 85%"
+            description: "Node {{ $labels.instance }} memory usage has been above 85% for more than 5 minutes. Current value: {{ $value | printf \"%.1f\" }}%."
