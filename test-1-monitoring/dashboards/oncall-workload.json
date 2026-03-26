@@ -1,0 +1,169 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "count by (namespace) (kube_pod_container_status_restarts_total > 0)",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Restarts by Namespace",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "count by (reason) (kube_pod_container_status_waiting_reason) > 0",
+          "legendFormat": "{{reason}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Pods Waiting by Reason",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Node Memory Used (bytes)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (namespace) (kube_pod_container_resource_requests{resource=\"cpu\"})",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "CPU Requests by Namespace",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 16 },
+      "id": 5,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "count(kube_pod_container_status_waiting_reason{reason=\"CrashLoopBackOff\"}) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "title": "CrashLoopBackOff Count",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 16 },
+      "id": 6,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "count(kube_pod_container_status_waiting_reason{reason=\"OOMKilled\"}) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "title": "OOMKilled Count",
+      "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": { "unit": "short" }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 16 },
+      "id": 7,
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{phase=\"Pending\"}) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "title": "Pending Pods",
+      "type": "stat"
+    }
+  ],
+  "schemaVersion": 38,
+  "tags": ["kubernetes", "oncall"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "type": "datasource",
+        "label": "Datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "On-Call Workload Overview",
+  "uid": "oncall-workload",
+  "version": 1
+}
