@@ -1,0 +1,108 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "loki", "uid": "${loki_datasource}" },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"}",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Pod Logs",
+      "type": "logs"
+    },
+    {
+      "datasource": { "type": "loki", "uid": "${loki_datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineWidth": 2 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (pod) (count_over_time({namespace=~\"$namespace\", pod=~\"$pod\"} |~ \"(?i)error|(?i)exception|(?i)fatal\" [5m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Log Count Over Time",
+      "type": "timeseries"
+    }
+  ],
+  "schemaVersion": 38,
+  "tags": ["kubernetes", "logs"],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "name": "loki_datasource",
+        "options": [],
+        "query": "loki",
+        "refresh": 1,
+        "type": "datasource",
+        "label": "Loki Datasource"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "loki", "uid": "${loki_datasource}" },
+        "definition": "label_values(namespace)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "namespace",
+        "options": [],
+        "query": "label_values(namespace)",
+        "refresh": 2,
+        "type": "query",
+        "label": "Namespace",
+        "allValue": ".*"
+      },
+      {
+        "current": {},
+        "datasource": { "type": "loki", "uid": "${loki_datasource}" },
+        "definition": "label_values({namespace=~\"$namespace\"}, pod)",
+        "hide": 0,
+        "includeAll": true,
+        "multi": false,
+        "name": "pod",
+        "options": [],
+        "query": "label_values({namespace=~\"$namespace\"}, pod)",
+        "refresh": 2,
+        "type": "query",
+        "label": "Pod",
+        "allValue": ".*"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Application Logs",
+  "uid": "application-logs",
+  "version": 1
+}
