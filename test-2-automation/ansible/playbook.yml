@@ -1,0 +1,39 @@
+---
+- name: Configure VM1 (gateway)
+  hosts: gateway
+  become: true
+
+  vars:
+    hostname: sre-gateway
+
+  tasks:
+    - name: Set system hostname
+      hostname:
+        name: "{{ hostname }}"
+
+    - name: Update /etc/hosts with new hostname
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1'
+        line: "127.0.1.1 {{ hostname }}"
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: true
+
+    - name: Start and enable nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Confirm nginx is running
+      command: systemctl status nginx
+      register: nginx_status
+      changed_when: false
+
+    - name: Print nginx status
+      debug:
+        msg: "{{ nginx_status.stdout_lines }}"
