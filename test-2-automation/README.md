@@ -131,9 +131,101 @@ terraform destroy
 
 ## What I Would Add in Production
 
-- A NAT Gateway in the public subnet so VM2 can reach the internet for updates without a public IP
-- Remote Terraform state stored in S3 + DynamoDB locking instead of local state
-- Ansible Vault for any secrets passed to playbooks
-- An Application Load Balancer in front of VM1 instead of exposing the instance directly
-- Auto Scaling Group for VM2 to handle load
-- CloudWatch alarms for CPU, disk, and instance health
+### Terraform State & Locking
+
+The state file is local right now which works fine for a demo, but in a real team setup that's a problem — if two people run `terraform apply` at the same time, the state gets corrupted. I'd move it to S3 with a DynamoDB lock table so only one apply can run at a time and the state is versioned.
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "my-tf-state"
+    key            = "sre/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "tf-state-lock"
+    encrypt        = true
+  }
+}
+```
+
+### NAT Gateway for VM2
+
+VM2 has no public IP which is intentional, but that also means it can't reach the internet at all right now — it can't pull package updates or container images. I'd add a NAT Gateway in the public subnet so VM2 can initiate outbound connections without being directly reachable from outside.
+
+```hcl
+resource "aws_eip" "nat" { domain = "vpc" }
+
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public.id
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+}
+```
+
+### Application Load Balancer
+
+Right now traffic hits VM1's public IP directly. That's fine for testing but in production I wouldn't expose the instance IP — I'd put an ALB in front of it. That gives me TLS termination, health checks, and a stable DNS name that doesn't change if the instance gets replaced.
+
+```hcl
+resource "aws_lb" "main" {
+  name               = "sre-alb"
+  internal           = false
+  load_balancer_type = "application"
+  subnets            = [aws_subnet.public.id]
+  security_groups    = [aws_security_group.alb.id]
+}
+```
+
+### Auto Scaling Group for VM2
+
+VM2 is a single instance right now. If it dies, it's just gone. I'd replace it with an Auto Scaling Group using a launch template — that way it self-heals if the instance fails and scales out when load increases.
+
+```hcl
+resource "aws_autoscaling_group" "vm2" {
+  desired_capacity    = 2
+  min_size            = 1
+  max_size            = 5
+  vpc_zone_identifier = [aws_subnet.private.id]
+
+  launch_template {
+    id      = aws_launch_template.vm2.id
+    version = "$Latest"
+  }
+}
+```
+
+### Secrets Management
+
+The `terraform.tfvars` file is gitignored but it's still plaintext on disk. In production I'd pull sensitive values from SSM Parameter Store or Secrets Manager at plan time instead of keeping them in a local file. For Ansible, I'd use Vault to encrypt anything sensitive passed as a variable — API keys, DB passwords, that kind of thing.
+
+```bash
+ansible-vault encrypt_string 'supersecret' --name 'db_password'
+```
+
+I'd also drop port 22 from the security group entirely and use SSM Session Manager for shell access — no open SSH port, no key management headache.
+
+### Security Hardening
+
+A few things I'd tighten up:
+
+- Separate the ALB security group from VM1's SG so the instance only accepts traffic from the ALB, not the open internet
+- Enable VPC Flow Logs so I have a record of all traffic in and out of the VPC — useful for audits and incident response
+- Enable EBS encryption on both instances (`encrypted = true` on `root_block_device`) — it's one line and there's no reason not to
+
+### Observability
+
+EC2 doesn't expose memory or disk metrics by default, which is a gap. I'd install the CloudWatch Agent on both VMs to get those, and set up alarms on CPU, disk, and `StatusCheckFailed`. I'd also ship the nginx access and error logs to CloudWatch Logs — or better, pipe them into the Loki stack from test-1 since that's already set up.
+
+### CI/CD for Infrastructure
+
+I wouldn't want anyone running `terraform apply` manually in production. I'd set up a GitHub Actions pipeline that runs `terraform plan` on every PR and posts the plan as a comment, then gates `apply` behind a manual approval on merge to `main`. I'd also run `terraform validate` and `ansible-lint` in the pipeline so issues get caught before they reach any environment.
+
+### Multi-AZ & Environment Separation
+
+Everything is in `us-east-1a` right now. I'd spread the subnets across at least two AZs so a single AZ outage doesn't take everything down. I'd also separate environments — `dev`, `staging`, `prod` — using either Terraform workspaces or separate state files, rather than one flat config that everyone shares.
