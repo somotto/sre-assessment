@@ -176,7 +176,7 @@ Terraform will perform the following actions:
       + key_name_prefix = (known after apply)
       + key_pair_id     = (known after apply)
       + key_type        = (known after apply)
-      + public_key      = "ssh-rsa AAAAB3Nz2EAAAADAQABAAACAQDgJw+B2okzB3vxB7LmSIN32Mj31YfPDT2U+B6mPoqB2RiFXXRBRja234jNq/VKnU1wwUVdwD0qSrhZzpKOIOD3PAy3QY8B9/9yqyZBPuUE8KZ+UprQe9BI24QfIsPwUC9pKMJb6qOPiCtTbD3ErumlUPmpF9KsfU0+dlKhmuYTy+T+jSn85BzGoMvKIc1nBVHdwC1P06me6Lu30hHGvn5fxD7W6b0QZzG+avD5ncMESA5nFNmPq0tqsCaGtWGrc9d20R5VOiGjubS5kr8d2uSFuRLiS/Tz4j1TpFuG8Mcw1JHWTWMKX/sw6UdmTpinioAbXLD57oXlRuuj2NiJPsGUS/TBLbBbJFAOleKJV4v6TntlZivtOJQUM0Z1PEwGAy288kKZINtbB2Xfk4q0OXzcP6FVGCSJRKkni8LvGXyRy7vQyrN3TPDWvABhTU3XA9AqvTFtPCWeP4smhPVF8VVP5ALTSAC4NQ0oxYiWceQdwyU+EtMHOlTYMW+0UyDg/CNTw9ZflMFOvFrXAIbcbtkeY2Hf9bpxJkKVwbQsMNLZc5V883sMdmVhXjPaswtllClz7w+LgpvJfYzqi/HIqG6/CXkoSrAfKPSp2fR28IIbZZJRs4yzFC7l/t2LB+IklKK2alGfu2tQsz/EjevFR2HIb+5ptQ65wpUaQuxT0DjLKQ== morty@morty-ThinkPad-T480"
+      + public_key      = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
       + tags_all        = (known after apply)
     }
 
